@@ -64,7 +64,7 @@ class UUIDHandler(tornado.web.RequestHandler):
 
 class LogHandler(tornado.web.RequestHandler):
     def get(self):
-        self.write({'data': self.get_logs()})
+        self.write(self.get_logs())
     
     def get_logs(self):
         log_intercepter = LogIntercepterController()
@@ -101,10 +101,12 @@ class LogIntercepterController(Intercept):
         db = client['client-facade']
         collection = db['client-facade']
         cursor = collection.find().sort('data', -1)
-        
+        rows = []
         for row in cursor:
-            print(row['hora'])
-        return  ""
+            rows.append(row)
+            print(row)
+        
+        return json.dumps(rows, default=str)
 
 def make_app():
     return tornado.web.Application([
