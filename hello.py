@@ -12,14 +12,24 @@ class MainHandler(tornado.web.RequestHandler):
 
 class ClientHandler(tornado.web.RequestHandler):
     def get(self):
-        self.write({'clientes': self.get_all_clients()})
+        try:
+            self.write({'status': 200, 'clientes': self.get_all_clients()})
+        except Exception as exc:
+            print("Error occurred during data retrieving")
+            self.write({'status': 500, 'error': exc})
 
     def post(self):
-        body = json.loads(self.request.body)
-        nome = body["nome"]
-        self.insert_into_clients(nome)
-        self.write({'msg': 'Inserido'})
-        
+        try:
+            body = json.loads(self.request.body)
+            nome = body["nome"]
+            if not nome:
+                self.write({'msg': 'Nome obrigatorio', 'status': 400})
+            self.insert_into_clients(nome)
+            self.write({'msg': 'Inserido', 'status': 200})
+        except Exception as exc:
+            print('Exception occurred during insert %s ' %exc)
+            self.write({'msg': 'Error', 'status': 500})
+
     def get_all_clients(self):
         try:
             db = pymysql.connect("10.20.0.5", "root", "admin", "db")
@@ -30,7 +40,7 @@ class ClientHandler(tornado.web.RequestHandler):
 
             return cursor.fetchall()
         except Exception as exc:
-            print(exc)
+            print("Exception occurred during retrieving data " %exc)
             db.rollback()
         finally:
             db.close()
@@ -54,10 +64,12 @@ class UUIDHandler(tornado.web.RequestHandler):
 
 class LogHandler(tornado.web.RequestHandler):
     def get(self):
-        self.write(self.get_logs())
+        self.write({'data': self.get_logs()})
     
     def get_logs(self):
-        return "document with logs"
+        log_intercepter = LogIntercepterController()
+        
+        return log_intercepter.get_recorded_logs()
 
 class Intercept(object):
     def __getattribute__(self, name):
@@ -82,7 +94,17 @@ class LogIntercepterController(Intercept):
                     'data': data}
         print(myData)
         x = collection.insert_one(dict(myData))
-        #print(x.inserted_ids)
+        print(x.inserted_id)
+
+    def get_recorded_logs(self):
+        client = MongoClient('localhost', 27017)
+        db = client['client-facade']
+        collection = db['client-facade']
+        cursor = collection.find().sort('data', -1)
+        
+        for row in cursor:
+            print(row['hora'])
+        return  ""
 
 def make_app():
     return tornado.web.Application([
