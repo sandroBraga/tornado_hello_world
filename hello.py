@@ -80,7 +80,7 @@ class LogIntercepterController(Intercept):
 
         myData = {'hora': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
                     'data': data}
-        print(type(myData))
+        print(myData)
         x = collection.insert_one(dict(myData))
         #print(x.inserted_ids)
 

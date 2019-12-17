@@ -1,0 +1,22 @@
+version: '3.3'
+
+# sudo docker exec -it dockermysql_mariadb_1 mysql -u root -padmin "ALTER USER 'root'@'%' IDENTIFIED WITH mysql_native_password BY 'admin';"
+
+networks:
+  dockernet:
+    ipam:
+      config:
+        - subnet: 10.20.0.0/24
+
+services:
+  mariadb:
+    image: mysql
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      - MYSQL_ROOT_PASSWORD=admin
+      - MYSQL_DATABASE=db
+      - MYSQL_USER=admin
+      - MYSQL_PASSWORD=admin
+    networks:
+        dockernet:
+            ipv4_address: 10.20.0.5
