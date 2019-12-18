@@ -6,10 +6,6 @@ import pymysql
 from pymongo import MongoClient
 from datetime import datetime
 
-class MainHandler(tornado.web.RequestHandler):
-    def get(self):
-        self.write("Hello, World")
-
 class ClientHandler(tornado.web.RequestHandler):
     def get(self):
         try:
@@ -53,14 +49,24 @@ class ClientHandler(tornado.web.RequestHandler):
             cursor.execute(query)
             db.commit()
         except Exception as exc:
-            print(exc)
+            print("Exception during insertion " %exc)
             db.rollback()
         finally:
             db.close()
-
-class UUIDHandler(tornado.web.RequestHandler):
-    def get(self):
-        self.write({'uuid': str(uuid.uuid4())})
+    
+    def get_client_by_name(self, nome):
+        try:
+            db = pymysql.connect("10.20.0.5", "root", "admin", "db")
+            cursor = db.cursor()
+            query = "SELECT * FROM Cliente WHERE Nome = '%s'" % (nome)
+            cursor.execute(query)
+            
+            return cursor.fetchall()
+        except Exception as exc:
+            print("Exception occurred while retrieving data " %exc)
+            db.rollback()
+        finally:
+            db.close()
 
 class LogHandler(tornado.web.RequestHandler):
     def get(self):
@@ -92,9 +98,8 @@ class LogIntercepterController(Intercept):
 
         myData = {'hora': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
                     'data': data}
-        print(myData)
+
         x = collection.insert_one(dict(myData))
-        print(x.inserted_id)
 
     def get_recorded_logs(self):
         client = MongoClient('localhost', 27017)
@@ -110,10 +115,8 @@ class LogIntercepterController(Intercept):
 
 def make_app():
     return tornado.web.Application([
-        (r"/", MainHandler),
         (r"/client", ClientHandler),
         (r"/logs", LogHandler),
-        (r"/uuid", UUIDHandler),
     ])
 
 if __name__ == "__main__":
